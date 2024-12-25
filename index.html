@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Torneo Dinamico</title>
+  <style>
+    /* Global styles */
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: linear-gradient(135deg, #e3f2fd, #90caf9);
+      color: #333;
+      min-height: 100vh;
+    }
+    header {
+      background-color: #0078D7;
+      color: #fff;
+      width: 100%;
+      text-align: center;
+      padding: 20px 0;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+    }
+
+    .container {
+      padding: 20px;
+      margin-top: 20px;
+      background-color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      max-width: 800px;
+      width: 90%;
+      overflow-y: auto;
+    }
+
+    h2, h3 {
+      color: #0078D7;
+    }
+
+    input {
+      padding: 12px;
+      width: calc(100% - 20px);
+      margin: 10px 0;
+      border: 2px solid #0078D7;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+
+    input:focus {
+      border-color: #0056a3;
+    }
+
+    button {
+      padding: 12px 20px;
+      background-color: #0078D7;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 8px;
+      margin-top: 10px;
+      font-size: 1rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #0056a3;
+      transform: scale(1.05);
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .participant-list, .match-list {
+      margin: 20px 0;
+      padding: 15px;
+      background-color: #f1f1f1;
+      border-radius: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .participant-list ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .participant-list li {
+      padding: 8px 10px;
+      background-color: #e3f2fd;
+      margin-bottom: 5px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      font-weight: bold;
+      color: #0056a3;
+    }
+
+    .match {
+      padding: 15px;
+      margin-bottom: 10px;
+      background-color: #e7f3ff;
+      border: 2px solid #0078D7;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .winner {
+      background-color: #d4edda;
+      color: #155724;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 1.4rem;
+      margin-top: 20px;
+      font-weight: bold;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        width: 95%;
+      }
+      .match {
+        flex-direction: column;
+        text-align: center;
+      }
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Torneo Dinamico</h1>
+  </header>
+  <div class="container">
+    <h2>Aggiungi Partecipanti</h2>
+    <input type="text" id="participant-name" placeholder="Nome partecipante">
+    <button id="add-participant">Aggiungi</button>
+    <div class="participant-list">
+      <h3>Lista Partecipanti:</h3>
+      <ul id="participant-list"></ul>
+    </div>
+    <button id="generate-matches" disabled>Genera Partite</button>
+    <div class="match-list">
+      <h3>Partite:</h3>
+      <div id="match-list"></div>
+    </div>
+    <div id="winner-display" class="winner" style="display: none;"></div>
+  </div>
+
+  <script>
+    const participantInput = document.getElementById('participant-name');
+    const addParticipantButton = document.getElementById('add-participant');
+    const participantList = document.getElementById('participant-list');
+    const generateMatchesButton = document.getElementById('generate-matches');
+    const matchList = document.getElementById('match-list');
+    const winnerDisplay = document.getElementById('winner-display');
+
+    let participants = [];
+    let matches = [];
+
+    // Aggiungi partecipante
+    addParticipantButton.addEventListener('click', () => {
+      const name = participantInput.value.trim();
+      if (name && !participants.includes(name)) {
+        participants.push(name);
+        updateParticipantList();
+        participantInput.value = '';
+        generateMatchesButton.disabled = participants.length < 2;
+      }
+    });
+
+    // Aggiorna lista partecipanti
+    function updateParticipantList() {
+      participantList.innerHTML = participants
+        .map(participant => `<li>${participant}</li>`)
+        .join('');
+    }
+
+    // Genera partite
+    generateMatchesButton.addEventListener('click', () => {
+      if (participants.length < 2) return;
+      winnerDisplay.style.display = 'none';
+      matchList.innerHTML = '';
+      matches = [];
+      const shuffled = [...participants].sort(() => Math.random() - 0.5);
+      while (shuffled.length > 1) {
+        const player1 = shuffled.pop();
+        const player2 = shuffled.pop();
+        matches.push({ player1, player2, winner: null });
+      }
+      if (shuffled.length === 1) {
+        matches.push({ player1: shuffled.pop(), player2: 'BYE', winner: shuffled[0] });
+      }
+      renderMatches();
+    });
+
+    // Render partite
+    function renderMatches() {
+      matchList.innerHTML = matches
+        .map(
+          (match, index) => `
+          <div class="match">
+            <span>${match.player1} vs ${match.player2}</span>
+            <div>
+              <button onclick="setWinner(${index}, '${match.player1}')">${match.player1}</button>
+              ${match.player2 !== 'BYE' ? `<button onclick="setWinner(${index}, '${match.player2}')">${match.player2}</button>` : ''}
+            </div>
+          </div>`
+        )
+        .join('');
+    }
+
+    // Imposta vincitore
+    window.setWinner = (index, winner) => {
+      matches[index].winner = winner;
+      checkWinners();
+    };
+
+    // Controlla vincitori
+    function checkWinners() {
+      const winners = matches.map(match => match.winner).filter(Boolean);
+      if (winners.length === matches.length) {
+        if (winners.length === 1) {
+          winnerDisplay.textContent = `Vincitore del Torneo: ${winners[0]}!`;
+          winnerDisplay.style.display = 'block';
+        } else {
+          participants = winners;
+          generateMatchesButton.click();
+        }
+      }
+    }
+  </script>
+</body>
+</html>
